@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ue-simulator
+  labels:
+    app: ue-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ue-simulator
+  template:
+    metadata:
+      labels:
+        app: ue-simulator
+    spec:
+      containers:
+      - name: ue-simulator-container
+        image: oaisoftwarealliance/oai-nr-ue:develop
+        securityContext:
+          privileged: true
+        env:
+        - name: USE_ADDITIONAL_OPTIONS
+          value: "--rfsim --rfsimulator.serveraddr 127.0.0.1 -r 106 --numerology 1 --band 78 -C 3619200000 --uicc0.imsi 001010000000001 --uicc0.key fec86ba6eb707ed08905757b1bb44b8f --uicc0.opc C42449363BBAD02B66D16BC975D77CC1"
+        # 
+        volumeMounts:
+        - name: ue-simulator-config-volume
+          mountPath: /opt/oai-nr-ue/etc/nr-ue.conf
+          #subPath: gnb-du.sa.band78.106prb.rfsim.conf
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "pgrep nr-uesoftmodem"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: ue-simulator-config-volume
+        hostPath:
+          path: /home/priyanshu/Desktop/k8s_cluster/nrue.uicc.conf  # Replace with correct path
+          type: File
+      hostNetwork: true
