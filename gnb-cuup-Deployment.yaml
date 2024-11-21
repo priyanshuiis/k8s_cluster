@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gnb-cuup-deployment
+  labels:
+    app: gnb-cuup
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gnb-cuup
+  template:
+    metadata:
+      labels:
+        app: gnb-cuup
+    spec:
+      containers:
+      - name: gnb-cuup-container
+        image: oaisoftwarealliance/oai-nr-cuup:develop
+        securityContext:
+          privileged: true
+        env:
+        - name: USE_ADDITIONAL_OPTIONS
+          value: "--sa"
+        volumeMounts:
+        - name: gnb-cuup-config-volume
+          mountPath: /opt/oai-gnb/etc/gnb.conf
+          #subPath: gnb-cuup.sa.f1-e1.iisc.conf
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "pgrep nr-cuup"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: gnb-cuup-config-volume
+        hostPath:
+          path: /home/priyanshu/Desktop/k8s_cluster/gnb-cuup.sa.f1-e1.iisc.conf  # Use the correct path to the file
+          type: File
+      hostNetwork: true

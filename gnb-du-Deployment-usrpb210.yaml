@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gnb-du-usrpb210-deployment
+  labels:
+    app: gnb-du-usrpb210
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gnb-du-usrpb210
+  template:
+    metadata:
+      labels:
+        app: gnb-du-usrpb210
+    spec:
+      containers:
+      - name: gnb-du-usrpb210-container
+        image: oaisoftwarealliance/oai-gnb:develop
+        securityContext:
+          privileged: true
+        env:
+        - name: USE_B2XX
+          value: "yes"
+        - name: USE_ADDITIONAL_OPTIONS
+          value: "--sa --RUs.[0].sdr_addrs serial=31C9C3C --continuous-tx -E --telnetsrv --telnetsrv.listenport 9091 --telnetsrv.shrmod ci --log_config.global_log_options level,nocolor,time,line_num,function"
+        volumeMounts:
+        - name: pci-driver-volume
+          mountPath: /sys/bus/pci/drivers
+        - name: hugepages-volume
+          mountPath: /sys/kernel/mm/hugepages
+        - name: system-node-volume
+          mountPath: /sys/devices/system/node
+        - name: dev-volume
+          mountPath: /dev
+        - name: gnb-du-usrpb210-config-volume
+          mountPath: /opt/oai-gnb/etc/gnb.conf
+          # Uncomment the line below if the file inside the volume needs to be accessed with a specific name
+          #subPath: gnb-du.sa.band78.106prb.rfsim.conf
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "pgrep nr-nrsoftmodem"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: pci-driver-volume
+        hostPath:
+          path: /sys/bus/pci/drivers
+      - name: hugepages-volume
+        hostPath:
+          path: /sys/kernel/mm/hugepages
+      - name: system-node-volume
+        hostPath:
+          path: /sys/devices/system/node
+      - name: dev-volume
+        hostPath:
+          path: /dev
+      - name: gnb-du-usrpb210-config-volume
+        hostPath:
+          path: /home/priyanshu/Desktop/k8s_cluster/gnb-du.sa.band78.106prb.rfsim.conf
+      hostNetwork: true
