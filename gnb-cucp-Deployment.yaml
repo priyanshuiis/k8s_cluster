@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment                # Deployment pod
+metadata:
+  name: gnb-cucp-deployment     # type of Deployment
+  labels:
+    app: gnb-cucp               # name for each Deployment of the same type
+spec:                           # spec of the Pod
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gnb-cucp
+  template:
+    metadata:
+      labels:
+        app: gnb-cucp
+    spec:                       # spec of the inside pod. Ex: containers template
+      containers:         
+      - name: gnb-cucp-container    # name for the container running in a deployment pod
+        image: oaisoftwarealliance/oai-gnb:develop
+        securityContext:
+          privileged: true
+        env:
+        - name: USE_ADDITIONAL_OPTIONS
+          value: "--sa --telnetsrv --telnetsrv.listenport 9090 --telnetsrv.shrmod ci --log_config.global_log_options level,nocolor,time,line_num,function"
+        volumeMounts:
+        - name: gnb-cucp-config-volume
+          mountPath: /opt/oai-gnb/etc/gnb.conf
+            #subPath: gnb.conf
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "pgrep nr-softmodem"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: gnb-cucp-config-volume
+        hostPath:
+          path: /home/priyanshu/Desktop/k8s_cluster/gnb-cucp.sa.f1-e1.iisc.conf
+          type: File
+      hostNetwork: true
